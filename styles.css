@@ -392,10 +392,11 @@ body {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 20px;
-    background: white;
+    background: var(--card-bg);
     border-radius: 15px;
     padding: 25px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 25px var(--shadow-color);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .control-group {
@@ -1199,6 +1200,60 @@ body {
 
 [data-theme="dark"] .api-provider small {
     color: #b0b0b0;
+}
+
+[data-theme="dark"] .control-panel {
+    background: #1a202c !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
+    color: #ffffff !important;
+    border: 1px solid #2d3748 !important;
+}
+
+/* Force dark mode for control panel with higher specificity */
+html[data-theme="dark"] .control-panel {
+    background: #1a202c !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
+    color: #ffffff !important;
+    border: 1px solid #2d3748 !important;
+}
+
+/* Even more specific selector - FORCE DARK MODE */
+body[data-theme="dark"] .control-panel,
+html[data-theme="dark"] body .control-panel,
+[data-theme="dark"] .container .control-panel {
+    background: #1a202c !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
+    color: #ffffff !important;
+    border: 1px solid #2d3748 !important;
+}
+
+/* Debug: Add a very obvious style to test if CSS is loading */
+[data-theme="dark"] .control-panel::before {
+    content: "DARK MODE ACTIVE";
+    position: absolute;
+    top: -20px;
+    left: 0;
+    background: red;
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 9999;
+}
+
+[data-theme="dark"] .control-group {
+    color: var(--text-primary);
+}
+
+/* Dark mode for mobile control panel */
+@media (max-width: 768px) {
+    [data-theme="dark"] .control-panel,
+    html[data-theme="dark"] .control-panel,
+    body[data-theme="dark"] .control-panel {
+        background: #1a202c !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
+        color: #ffffff !important;
+        border: 1px solid #2d3748 !important;
+    }
 }
 
 body, .btn, .modal-content, .feedback-section, .history-item, .ai-feedback {
