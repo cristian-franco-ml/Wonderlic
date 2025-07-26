@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Wonderlic Practice - Cognitive Aptitude Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-brain"></i> Wonderlic Practice</h1>
+            <p>Cognitive Aptitude Test</p>
+        </header>
+
+        <div class="stats-dashboard">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number" id="correct-count">0</div>
+                    <div class="stat-label">Correct</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number" id="incorrect-count">0</div>
+                    <div class="stat-label">Incorrect</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number" id="accuracy">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-question-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number" id="total-questions">0</div>
+                    <div class="stat-label">Total Questions</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="question-section">
+                <div class="question-header">
+                    <div class="question-counter">
+                        Question <span id="current-question">1</span> of <span id="total-in-session">10</span>
+                    </div>
+                    <div class="timer">
+                        <i class="fas fa-clock"></i>
+                        <span id="timer">02:00</span>
+                    </div>
+                </div>
+
+                <div class="question-container">
+                    <div class="question-text" id="question-text">
+                        Loading question...
+                    </div>
+                    
+                    <div class="options-container" id="options-container">
+                        <!-- Options will be generated dynamically -->
+                    </div>
+                </div>
+
+                <div class="question-controls">
+                    <button class="btn btn-primary" id="submit-btn" disabled>
+                        <i class="fas fa-check"></i> Submit Answer
+                    </button>
+                    <button class="btn btn-secondary" id="skip-btn">
+                        <i class="fas fa-forward"></i> Skip
+                    </button>
+                    <button class="btn btn-success" id="next-btn" style="display: none;">
+                        <i class="fas fa-arrow-right"></i> Next
+                    </button>
+                </div>
+            </div>
+
+            <div class="feedback-section" id="feedback-section" style="display: none;">
+                <div class="feedback-content">
+                    <div class="feedback-header">
+                        <h3 id="feedback-title">Correct Answer!</h3>
+                    </div>
+                    <div class="feedback-body">
+                        <p id="feedback-explanation">Excellent work. Your reasoning was correct.</p>
+                        <div class="ai-feedback" id="ai-feedback" style="display: none;">
+                            <div class="ai-feedback-header">
+                                <i class="fas fa-robot"></i> AI Analysis (Kimi)
+                            </div>
+                            <div class="ai-feedback-content" id="ai-feedback-content">
+                                Analyzing your answer...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <button class="btn btn-warning" id="new-questions-btn">
+                    <i class="fas fa-refresh"></i> New Questions
+                </button>
+                <button class="btn btn-info" id="generate-ai-btn">
+                    <i class="fas fa-magic"></i> Generate with AI
+                </button>
+                <button class="btn btn-secondary" id="api-config-btn">
+                    <i class="fas fa-cog"></i> API Settings
+                </button>
+            </div>
+            <div class="control-group">
+                <button class="btn btn-secondary" id="learning-dashboard-btn">
+                    <i class="fas fa-chart-line"></i> Learning Dashboard
+                </button>
+                <button class="btn btn-secondary" id="history-btn">
+                    <i class="fas fa-history"></i> View History
+                </button>
+                <button class="btn btn-danger" id="reset-stats-btn">
+                    <i class="fas fa-trash"></i> Reset Statistics
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal" id="history-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-history"></i> Answer History</h2>
+                <button class="modal-close" id="close-history">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="history-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="correct">Correct</button>
+                    <button class="filter-btn" data-filter="incorrect">Incorrect</button>
+                </div>
+                <div class="history-list" id="history-list">
+                    <!-- History will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Configuration Modal -->
+    <div class="modal" id="api-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Kimi API Configuration</h2>
+                <button class="modal-close" id="close-api">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="api-config">
+                    <p><strong>Get your free API key:</strong></p>
+                    <ol>
+                        <li>Visit <a href="https://platform.moonshot.cn/" target="_blank">platform.moonshot.cn</a></li>
+                        <li>Register/Login (free account)</li>
+                        <li>Go to API Keys section in your console</li>
+                        <li>Create new API key (starts with "sk-")</li>
+                        <li><strong>Important:</strong> Make sure to copy the key immediately after creation</li>
+                    </ol>
+                    <label for="api-key">Your Moonshot AI API Key:</label>
+                    <input type="password" id="api-key" placeholder="sk-xxxxxxxxxxxxxxxxx">
+                    <small>Your API key will be stored locally and securely. Free tier includes $1 credit.</small>
+                    <button class="btn btn-primary" id="save-api-key">Save API Key</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Learning Dashboard Modal -->
+    <div class="modal" id="learning-dashboard-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-line"></i> Learning Analytics Dashboard</h2>
+                <button class="modal-close" id="close-learning-dashboard">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="learning-dashboard">
+                    <div class="dashboard-section">
+                        <h3><i class="fas fa-target"></i> Performance by Category</h3>
+                        <div class="performance-grid" id="performance-grid">
+                            <!-- Performance data will be loaded dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-section">
+                        <h3><i class="fas fa-clock"></i> Time Analysis</h3>
+                        <div class="time-analysis" id="time-analysis">
+                            <!-- Time analysis will be loaded dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-section">
+                        <h3><i class="fas fa-lightbulb"></i> Improvement Suggestions</h3>
+                        <div class="improvement-suggestions" id="improvement-suggestions">
+                            <!-- Suggestions will be loaded dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Recent Mistakes</h3>
+                        <div class="recent-mistakes" id="recent-mistakes">
+                            <!-- Recent mistakes will be loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Generating new questions...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 
