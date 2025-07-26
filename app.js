@@ -166,6 +166,13 @@ class WonderlicApp {
 
     initializeApp() {
         this.updateDisplay();
+        // Dark theme initialization
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
         
         // API modal will be shown when user tries to use AI features
         // or clicks API Settings button
@@ -184,6 +191,17 @@ class WonderlicApp {
         document.getElementById('api-config-btn').addEventListener('click', () => this.showApiModal());
         document.getElementById('history-btn').addEventListener('click', () => this.showHistory());
         document.getElementById('reset-stats-btn').addEventListener('click', () => this.resetStats());
+        // Dark theme toggle
+        document.getElementById('dark-theme-btn').addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
         
         // Modals
         document.getElementById('close-history').addEventListener('click', () => this.closeModal('history-modal'));
