@@ -106,10 +106,7 @@
                     <i class="fas fa-refresh"></i> New Questions
                 </button>
                 <button class="btn btn-info" id="generate-ai-btn">
-                    <i class="fas fa-magic"></i> Generate with AI
-                </button>
-                <button class="btn btn-secondary" id="api-config-btn">
-                    <i class="fas fa-cog"></i> API Settings
+                    <i class="fas fa-magic"></i> Generate AI Questions
                 </button>
             </div>
             <div class="control-group">
@@ -149,49 +146,7 @@
         </div>
     </div>
 
-    <!-- API Configuration Modal -->
-    <div class="modal" id="api-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-cog"></i> Kimi API Configuration</h2>
-                <button class="modal-close" id="close-api">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="api-config">
-                    <p><strong>Get your API key from any of these providers:</strong></p>
-                    
-                    <div class="api-provider">
-                        <h4><i class="fas fa-rocket"></i> Moonshot AI (Recommended)</h4>
-                        <ol>
-                            <li>Visit <a href="https://platform.moonshot.cn/" target="_blank">platform.moonshot.cn</a></li>
-                            <li>Register/Login (free account)</li>
-                            <li>Go to API Keys section in your console</li>
-                            <li>Create new API key (starts with "sk-")</li>
-                            <li><strong>Important:</strong> Copy the key immediately after creation</li>
-                        </ol>
-                        <small>Free tier includes $1 credit</small>
-                    </div>
-                    
-                    <div class="api-provider">
-                        <h4><i class="fas fa-brain"></i> OpenAI</h4>
-                        <ol>
-                            <li>Visit <a href="https://platform.openai.com/" target="_blank">platform.openai.com</a></li>
-                            <li>Sign up/Login to your account</li>
-                            <li>Go to API Keys section</li>
-                            <li>Create new API key (starts with "sk-")</li>
-                        </ol>
-                        <small>Requires credit card for API usage</small>
-                    </div>
-                    
-                    <label for="api-key">Your API Key:</label>
-                    <input type="password" id="api-key" placeholder="sk-xxxxxxxxxxxxxxxxx">
-                    <small>Your API key will be stored locally and securely. The app will automatically try multiple providers for better reliability.</small>
-                    <div id="api-status" class="api-status"></div>
-                    <button class="btn btn-primary" id="save-api-key">Save API Key</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Learning Dashboard Modal -->
     <div class="modal" id="learning-dashboard-modal">
