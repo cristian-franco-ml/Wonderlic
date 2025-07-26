@@ -190,6 +190,4 @@ The application is optimized for:
 3. **Provide context** - How to use
 4. **Offer support** - Answer questions
 
----
-
-**Ready to share? Package all files and let others start improving their cognitive skills!** 🚀 
+--- 
