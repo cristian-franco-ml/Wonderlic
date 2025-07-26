@@ -203,11 +203,24 @@ class WonderlicApp {
             }
         });
         
-        // Modals
-        document.getElementById('close-history').addEventListener('click', () => this.closeModal('history-modal'));
-        document.getElementById('close-api').addEventListener('click', () => this.closeModal('api-modal'));
-        document.getElementById('close-learning-dashboard').addEventListener('click', () => this.closeModal('learning-dashboard-modal'));
-        document.getElementById('save-api-key').addEventListener('click', () => this.saveApiKey());
+        // Modals - with error checking
+        const closeHistoryBtn = document.getElementById('close-history');
+        const closeApiBtn = document.getElementById('close-api');
+        const closeLearningDashboardBtn = document.getElementById('close-learning-dashboard');
+        const saveApiKeyBtn = document.getElementById('save-api-key');
+        
+        if (closeHistoryBtn) {
+            closeHistoryBtn.addEventListener('click', () => this.closeModal('history-modal'));
+        }
+        if (closeApiBtn) {
+            closeApiBtn.addEventListener('click', () => this.closeModal('api-modal'));
+        }
+        if (closeLearningDashboardBtn) {
+            closeLearningDashboardBtn.addEventListener('click', () => this.closeModal('learning-dashboard-modal'));
+        }
+        if (saveApiKeyBtn) {
+            saveApiKeyBtn.addEventListener('click', () => this.saveApiKey());
+        }
         
         // History filters
         document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -221,6 +234,16 @@ class WonderlicApp {
                     modal.style.display = 'none';
                 }
             });
+        });
+        
+        // Close modals with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const openModals = document.querySelectorAll('.modal[style*="block"]');
+                openModals.forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
         });
     }
 
@@ -1120,22 +1143,157 @@ class WonderlicApp {
         if (this.apiKey) {
             document.getElementById('api-key').value = this.apiKey;
         }
+        
+        // Clear any previous status messages
+        this.hideApiStatus();
+        
+        // Add fallback event listener for close button
+        const closeApiBtn = document.getElementById('close-api');
+        if (closeApiBtn) {
+            // Remove any existing listeners to avoid duplicates
+            closeApiBtn.removeEventListener('click', this.closeApiModalFallback);
+            closeApiBtn.addEventListener('click', this.closeApiModalFallback);
+        }
+        
+        // Add fallback event listener for save button
+        const saveApiKeyBtn = document.getElementById('save-api-key');
+        if (saveApiKeyBtn) {
+            // Remove any existing listeners to avoid duplicates
+            saveApiKeyBtn.removeEventListener('click', this.saveApiKeyFallback);
+            saveApiKeyBtn.addEventListener('click', this.saveApiKeyFallback);
+        }
+    }
+    
+    closeApiModalFallback() {
+        const modal = document.getElementById('api-modal');
+        if (modal) {
+            modal.style.display = 'none';
+            console.log('API modal closed via fallback');
+        }
+    }
+    
+    saveApiKeyFallback() {
+        const apiKeyInput = document.getElementById('api-key');
+        if (apiKeyInput) {
+            const apiKey = apiKeyInput.value.trim();
+            if (apiKey) {
+                try {
+                    // Show saving indicator
+                    const saveBtn = document.getElementById('save-api-key');
+                    const originalText = saveBtn.textContent;
+                    saveBtn.textContent = 'Saving...';
+                    saveBtn.disabled = true;
+                    this.showApiStatus('Saving API key...', 'info');
+                    
+                    // Simulate a small delay to show the saving state
+                    setTimeout(() => {
+                        localStorage.setItem('kimi_api_key', apiKey);
+                        console.log('API key saved via fallback');
+                        
+                        // Show success message
+                        this.showApiStatus('API key saved successfully!', 'success');
+                        
+                        // Reset button
+                        saveBtn.textContent = originalText;
+                        saveBtn.disabled = false;
+                        
+                        // Close modal after a short delay
+                        setTimeout(() => {
+                            document.getElementById('api-modal').style.display = 'none';
+                            this.hideApiStatus();
+                        }, 1500);
+                    }, 500);
+                } catch (error) {
+                    console.error('Error saving API key via fallback:', error);
+                    this.showApiStatus('Error saving API key. Please try again.', 'error');
+                    
+                    // Reset button on error
+                    const saveBtn = document.getElementById('save-api-key');
+                    saveBtn.textContent = 'Save API Key';
+                    saveBtn.disabled = false;
+                }
+            } else {
+                this.showApiStatus('Please enter a valid API Key.', 'error');
+            }
+        }
     }
 
     saveApiKey() {
-        const apiKey = document.getElementById('api-key').value.trim();
+        const apiKeyInput = document.getElementById('api-key');
+        const statusDiv = document.getElementById('api-status');
+        
+        if (!apiKeyInput) {
+            console.error('API key input element not found');
+            this.showApiStatus('Error: API key input not found. Please refresh the page and try again.', 'error');
+            return;
+        }
+        
+        const apiKey = apiKeyInput.value.trim();
         if (apiKey) {
-            this.apiKey = apiKey;
-            localStorage.setItem('kimi_api_key', apiKey);
-            this.closeModal('api-modal');
-            alert('API Key saved successfully. You can now use AI features.');
+            try {
+                // Show saving indicator
+                const saveBtn = document.getElementById('save-api-key');
+                const originalText = saveBtn.textContent;
+                saveBtn.textContent = 'Saving...';
+                saveBtn.disabled = true;
+                this.showApiStatus('Saving API key...', 'info');
+                
+                // Simulate a small delay to show the saving state
+                setTimeout(() => {
+                    this.apiKey = apiKey;
+                    localStorage.setItem('kimi_api_key', apiKey);
+                    console.log('API key saved successfully');
+                    
+                    // Show success message
+                    this.showApiStatus('API key saved successfully!', 'success');
+                    
+                    // Reset button
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                    
+                    // Close modal after a short delay
+                    setTimeout(() => {
+                        this.closeModal('api-modal');
+                        this.hideApiStatus();
+                    }, 1500);
+                }, 500);
+            } catch (error) {
+                console.error('Error saving API key:', error);
+                this.showApiStatus('Error saving API key. Please try again.', 'error');
+                
+                // Reset button on error
+                const saveBtn = document.getElementById('save-api-key');
+                saveBtn.textContent = 'Save API Key';
+                saveBtn.disabled = false;
+            }
         } else {
-            alert('Please enter a valid API Key.');
+            this.showApiStatus('Please enter a valid API Key.', 'error');
+        }
+    }
+    
+    showApiStatus(message, type) {
+        const statusDiv = document.getElementById('api-status');
+        if (statusDiv) {
+            statusDiv.textContent = message;
+            statusDiv.className = `api-status ${type}`;
+        }
+    }
+    
+    hideApiStatus() {
+        const statusDiv = document.getElementById('api-status');
+        if (statusDiv) {
+            statusDiv.style.display = 'none';
         }
     }
 
     closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+            console.log(`Modal ${modalId} closed successfully`);
+        } else {
+            console.error(`Modal with ID '${modalId}' not found`);
+        }
     }
 
     shuffleArray(array) {
@@ -1148,7 +1306,7 @@ class WonderlicApp {
     }
 }
 
-// Inicializar la aplicación cuando el DOM esté listo
+// Initialize the application when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     new WonderlicApp();
-}); 
+});
