@@ -168,10 +168,18 @@ class WonderlicApp {
         this.updateDisplay();
         // Dark theme initialization
         const savedTheme = localStorage.getItem('theme');
+        const darkThemeBtn = document.getElementById('dark-theme-btn');
+        
         if (savedTheme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
+            if (darkThemeBtn) {
+                darkThemeBtn.innerHTML = '<i class="fas fa-sun"></i> Light Theme';
+            }
         } else {
             document.documentElement.removeAttribute('data-theme');
+            if (darkThemeBtn) {
+                darkThemeBtn.innerHTML = '<i class="fas fa-moon"></i> Dark Theme';
+            }
         }
         
         // API modal will be shown when user tries to use AI features
@@ -194,12 +202,19 @@ class WonderlicApp {
         // Dark theme toggle
         document.getElementById('dark-theme-btn').addEventListener('click', () => {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const darkThemeBtn = document.getElementById('dark-theme-btn');
+            const icon = darkThemeBtn.querySelector('i');
+            
             if (isDark) {
                 document.documentElement.removeAttribute('data-theme');
                 localStorage.setItem('theme', 'light');
+                icon.className = 'fas fa-moon';
+                darkThemeBtn.innerHTML = '<i class="fas fa-moon"></i> Dark Theme';
             } else {
                 document.documentElement.setAttribute('data-theme', 'dark');
                 localStorage.setItem('theme', 'dark');
+                icon.className = 'fas fa-sun';
+                darkThemeBtn.innerHTML = '<i class="fas fa-sun"></i> Light Theme';
             }
         });
         
@@ -376,6 +391,11 @@ class WonderlicApp {
         const aiFeedback = document.getElementById('ai-feedback');
         const aiFeedbackContent = document.getElementById('ai-feedback-content');
         
+        if (!aiFeedback || !aiFeedbackContent) {
+            console.error('AI feedback elements not found');
+            return;
+        }
+        
         aiFeedback.style.display = 'block';
         aiFeedbackContent.textContent = 'Analyzing your answer...';
         
@@ -385,6 +405,9 @@ class WonderlicApp {
             aiFeedbackContent.textContent = feedback;
             return;
         }
+        
+        // Check if we're on mobile and add mobile-specific handling
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         try {
             const prompt = `
@@ -398,44 +421,84 @@ class WonderlicApp {
             Please provide a detailed analysis in English of why the user's answer is incorrect and explain the correct reasoning in an educational and constructive manner. Keep an encouraging tone.
             `;
             
-            const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'moonshot-v1-8k',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ],
-                    temperature: 0.7
-                })
-            });
+            // Add timeout for mobile devices
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), isMobile ? 15000 : 30000); // 15s timeout on mobile
             
-            if (response.ok) {
+            // Try multiple API endpoints for better reliability
+            const apiEndpoints = [
+                'https://api.moonshot.cn/v1/chat/completions',
+                'https://api.openai.com/v1/chat/completions'
+            ];
+            
+            let response = null;
+            let lastError = null;
+            
+            for (const endpoint of apiEndpoints) {
+                try {
+                    const model = endpoint.includes('moonshot') ? 'moonshot-v1-8k' : 'gpt-3.5-turbo';
+                    
+                    response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: prompt
+                                }
+                            ],
+                            temperature: 0.7,
+                            max_tokens: isMobile ? 500 : 1000
+                        }),
+                        signal: controller.signal
+                    });
+                    
+                    if (response.ok) {
+                        break; // Success, exit the loop
+                    }
+                } catch (error) {
+                    lastError = error;
+                    continue; // Try next endpoint
+                }
+            }
+            
+            clearTimeout(timeoutId);
+            
+            if (response && response.ok) {
                 const data = await response.json();
                 aiFeedbackContent.textContent = data.choices[0].message.content;
             } else {
-                const errorData = await response.text();
-                console.error('API Response:', response.status, errorData);
-                if (response.status === 401) {
-                    // Fallback to local feedback
-                    const feedback = this.generateLocalFeedback(question, userAnswer);
-                    aiFeedbackContent.textContent = feedback;
-                } else if (response.status === 429) {
+                const errorData = response ? await response.text() : 'No response';
+                console.error('API Response:', response?.status, errorData);
+                
+                if (response?.status === 401) {
+                    aiFeedbackContent.textContent = 'API key invalid. Please check your API settings.';
+                } else if (response?.status === 429) {
                     aiFeedbackContent.textContent = 'Rate limit exceeded. Please try again later.';
                 } else {
-                    aiFeedbackContent.textContent = `API Error: ${response.status}. Using local feedback instead.`;
-                    const feedback = this.generateLocalFeedback(question, userAnswer);
-                    aiFeedbackContent.textContent = feedback;
+                    aiFeedbackContent.textContent = 'AI service temporarily unavailable. Using local feedback instead.';
                 }
+                
+                const feedback = this.generateLocalFeedback(question, userAnswer);
+                aiFeedbackContent.textContent = feedback;
             }
         } catch (error) {
             console.error('API Error:', error);
+            
+            // Handle different types of errors
+            if (error.name === 'AbortError') {
+                aiFeedbackContent.textContent = 'Request timed out. Using local feedback instead.';
+            } else if (error.message.includes('fetch')) {
+                aiFeedbackContent.textContent = 'Network error. Check your internet connection and try again.';
+            } else {
+                aiFeedbackContent.textContent = 'AI service temporarily unavailable. Using local feedback instead.';
+            }
+            
             const feedback = this.generateLocalFeedback(question, userAnswer);
             aiFeedbackContent.textContent = feedback;
         }
@@ -629,7 +692,13 @@ class WonderlicApp {
             return;
         }
         
-        document.getElementById('loading-overlay').style.display = 'block';
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'block';
+        }
+        
+        // Check if we're on mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         try {
             // Get user's weak areas to focus on those
@@ -668,26 +737,55 @@ class WonderlicApp {
             Make sure all questions are in English and completely original.
             `;
             
-            const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'moonshot-v1-8k',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ],
-                    temperature: 0.9,
-                    max_tokens: 2000
-                })
-            });
+            // Add timeout for mobile devices
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), isMobile ? 30000 : 60000); // 30s timeout on mobile
             
-            if (response.ok) {
+            // Try multiple API endpoints for better reliability
+            const apiEndpoints = [
+                'https://api.moonshot.cn/v1/chat/completions',
+                'https://api.openai.com/v1/chat/completions'
+            ];
+            
+            let response = null;
+            let lastError = null;
+            
+            for (const endpoint of apiEndpoints) {
+                try {
+                    const model = endpoint.includes('moonshot') ? 'moonshot-v1-8k' : 'gpt-3.5-turbo';
+                    
+                    response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: prompt
+                                }
+                            ],
+                            temperature: 0.9,
+                            max_tokens: isMobile ? 1500 : 2000
+                        }),
+                        signal: controller.signal
+                    });
+                    
+                    if (response.ok) {
+                        break; // Success, exit the loop
+                    }
+                } catch (error) {
+                    lastError = error;
+                    continue; // Try next endpoint
+                }
+            }
+            
+            clearTimeout(timeoutId);
+            
+            if (response && response.ok) {
                 const data = await response.json();
                 const content = data.choices[0].message.content;
                 
@@ -734,24 +832,37 @@ class WonderlicApp {
                     this.generateLocalQuestions();
                 }
             } else {
-                const errorData = await response.text();
-                console.error('API Response:', response.status, errorData);
-                if (response.status === 401) {
-                    // Fallback to local question generation
+                const errorData = response ? await response.text() : 'No response';
+                console.error('API Response:', response?.status, errorData);
+                
+                if (response?.status === 401) {
+                    alert('API key invalid. Please check your API settings.');
                     this.generateLocalQuestions();
-                } else if (response.status === 429) {
+                } else if (response?.status === 429) {
                     alert('Rate limit exceeded. Please try again later.');
                 } else {
-                    alert(`API Error: ${response.status}. Using local generation instead.`);
+                    alert('AI service temporarily unavailable. Using local generation instead.');
                     this.generateLocalQuestions();
                 }
             }
         } catch (error) {
             console.error('AI Generation Error:', error);
+            
+            // Handle different types of errors
+            if (error.name === 'AbortError') {
+                alert('Request timed out. Using local generation instead.');
+            } else if (error.message.includes('fetch')) {
+                alert('Network error. Check your internet connection and try again.');
+            } else {
+                alert('AI service temporarily unavailable. Using local generation instead.');
+            }
+            
             // Fallback to local question generation
             this.generateLocalQuestions();
         } finally {
-            document.getElementById('loading-overlay').style.display = 'none';
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
         }
     }
 
@@ -1174,19 +1285,30 @@ class WonderlicApp {
     
     saveApiKeyFallback() {
         const apiKeyInput = document.getElementById('api-key');
-        if (apiKeyInput) {
-            const apiKey = apiKeyInput.value.trim();
-            if (apiKey) {
-                try {
-                    // Show saving indicator
-                    const saveBtn = document.getElementById('save-api-key');
-                    const originalText = saveBtn.textContent;
-                    saveBtn.textContent = 'Saving...';
-                    saveBtn.disabled = true;
-                    this.showApiStatus('Saving API key...', 'info');
-                    
-                    // Simulate a small delay to show the saving state
-                    setTimeout(() => {
+        const saveBtn = document.getElementById('save-api-key');
+        
+        if (!apiKeyInput) {
+            console.error('API key input element not found in fallback');
+            return;
+        }
+        
+        if (!saveBtn) {
+            console.error('Save button not found in fallback');
+            return;
+        }
+        
+        const apiKey = apiKeyInput.value.trim();
+        if (apiKey) {
+            try {
+                // Show saving indicator
+                const originalText = saveBtn.textContent || 'Save API Key';
+                saveBtn.textContent = 'Saving...';
+                saveBtn.disabled = true;
+                this.showApiStatus('Saving API key...', 'info');
+                
+                // Simulate a small delay to show the saving state
+                setTimeout(() => {
+                    try {
                         localStorage.setItem('kimi_api_key', apiKey);
                         console.log('API key saved via fallback');
                         
@@ -1202,25 +1324,30 @@ class WonderlicApp {
                             document.getElementById('api-modal').style.display = 'none';
                             this.hideApiStatus();
                         }, 1500);
-                    }, 500);
-                } catch (error) {
-                    console.error('Error saving API key via fallback:', error);
-                    this.showApiStatus('Error saving API key. Please try again.', 'error');
-                    
-                    // Reset button on error
-                    const saveBtn = document.getElementById('save-api-key');
-                    saveBtn.textContent = 'Save API Key';
-                    saveBtn.disabled = false;
-                }
-            } else {
-                this.showApiStatus('Please enter a valid API Key.', 'error');
+                    } catch (innerError) {
+                        console.error('Error in fallback save timeout:', innerError);
+                        this.showApiStatus('Error saving API key. Please try again.', 'error');
+                        saveBtn.textContent = originalText;
+                        saveBtn.disabled = false;
+                    }
+                }, 500);
+            } catch (error) {
+                console.error('Error saving API key via fallback:', error);
+                this.showApiStatus('Error saving API key. Please try again.', 'error');
+                
+                // Reset button on error
+                saveBtn.textContent = 'Save API Key';
+                saveBtn.disabled = false;
             }
+        } else {
+            this.showApiStatus('Please enter a valid API Key.', 'error');
         }
     }
 
     saveApiKey() {
         const apiKeyInput = document.getElementById('api-key');
         const statusDiv = document.getElementById('api-status');
+        const saveBtn = document.getElementById('save-api-key');
         
         if (!apiKeyInput) {
             console.error('API key input element not found');
@@ -1228,41 +1355,52 @@ class WonderlicApp {
             return;
         }
         
+        if (!saveBtn) {
+            console.error('Save button not found');
+            this.showApiStatus('Error: Save button not found. Please refresh the page and try again.', 'error');
+            return;
+        }
+        
         const apiKey = apiKeyInput.value.trim();
         if (apiKey) {
             try {
                 // Show saving indicator
-                const saveBtn = document.getElementById('save-api-key');
-                const originalText = saveBtn.textContent;
+                const originalText = saveBtn.textContent || 'Save API Key';
                 saveBtn.textContent = 'Saving...';
                 saveBtn.disabled = true;
                 this.showApiStatus('Saving API key...', 'info');
                 
                 // Simulate a small delay to show the saving state
                 setTimeout(() => {
-                    this.apiKey = apiKey;
-                    localStorage.setItem('kimi_api_key', apiKey);
-                    console.log('API key saved successfully');
-                    
-                    // Show success message
-                    this.showApiStatus('API key saved successfully!', 'success');
-                    
-                    // Reset button
-                    saveBtn.textContent = originalText;
-                    saveBtn.disabled = false;
-                    
-                    // Close modal after a short delay
-                    setTimeout(() => {
-                        this.closeModal('api-modal');
-                        this.hideApiStatus();
-                    }, 1500);
+                    try {
+                        this.apiKey = apiKey;
+                        localStorage.setItem('kimi_api_key', apiKey);
+                        console.log('API key saved successfully');
+                        
+                        // Show success message
+                        this.showApiStatus('API key saved successfully!', 'success');
+                        
+                        // Reset button
+                        saveBtn.textContent = originalText;
+                        saveBtn.disabled = false;
+                        
+                        // Close modal after a short delay
+                        setTimeout(() => {
+                            this.closeModal('api-modal');
+                            this.hideApiStatus();
+                        }, 1500);
+                    } catch (innerError) {
+                        console.error('Error in save timeout:', innerError);
+                        this.showApiStatus('Error saving API key. Please try again.', 'error');
+                        saveBtn.textContent = originalText;
+                        saveBtn.disabled = false;
+                    }
                 }, 500);
             } catch (error) {
                 console.error('Error saving API key:', error);
                 this.showApiStatus('Error saving API key. Please try again.', 'error');
                 
                 // Reset button on error
-                const saveBtn = document.getElementById('save-api-key');
                 saveBtn.textContent = 'Save API Key';
                 saveBtn.disabled = false;
             }

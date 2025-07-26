@@ -545,6 +545,37 @@ body {
     gap: 15px;
 }
 
+.api-provider {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.api-provider h4 {
+    color: #333;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.api-provider ol {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+
+.api-provider li {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.api-provider small {
+    color: #666;
+    font-style: italic;
+}
+
 .api-config label {
     font-weight: 600;
     color: #333;
@@ -1154,9 +1185,76 @@ body {
   color: #a3bffa;
 }
 [data-theme="dark"] .ai-feedback-content {
-  color: #b0b0b0;
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] .api-provider {
+    background: #23235b;
+    border-left-color: #667eea;
+}
+
+[data-theme="dark"] .api-provider h4 {
+    color: #fff;
+}
+
+[data-theme="dark"] .api-provider small {
+    color: #b0b0b0;
 }
 
 body, .btn, .modal-content, .feedback-section, .history-item, .ai-feedback {
   transition: background 0.3s, color 0.3s;
+} 
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+        margin: 20px auto;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .api-config input {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 15px;
+    }
+    
+    .api-config button {
+        padding: 15px 20px;
+        font-size: 16px;
+        width: 100%;
+        margin-top: 10px;
+    }
+    
+    .modal-close {
+        font-size: 24px;
+        padding: 10px;
+        min-width: 44px; /* Touch target size */
+        min-height: 44px;
+    }
+    
+    /* Ensure buttons don't get stuck */
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    /* Better touch targets */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* Prevent button freezing */
+#save-api-key:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+#save-api-key:disabled:hover {
+    background-color: inherit;
+    transform: none;
 } 
