@@ -5,6 +5,7 @@ class WonderlicApp {
         this.currentSession = [];
         this.selectedAnswer = null;
         this.timer = null;
+        this.timerStartTime = null;
         this.timeLeft = 720; // 12 minutes total for 50 questions
         this.sessionStats = {
             correct: 0,
@@ -2264,8 +2265,10 @@ class WonderlicApp {
     }
 
     startTimer() {
+        this.timerStartTime = Date.now();
         this.timer = setInterval(() => {
-            this.timeLeft--;
+            const elapsedSeconds = Math.floor((Date.now() - this.timerStartTime) / 1000);
+            this.timeLeft = Math.max(0, 720 - elapsedSeconds);
             this.updateTimer();
             
             if (this.timeLeft <= 0) {
@@ -2279,10 +2282,12 @@ class WonderlicApp {
             clearInterval(this.timer);
             this.timer = null;
         }
+        this.timerStartTime = null;
     }
 
     resetTimer() {
         this.timeLeft = 720; // 12 minutes total
+        this.timerStartTime = Date.now();
         this.updateTimer();
     }
 
